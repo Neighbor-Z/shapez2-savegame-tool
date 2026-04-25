@@ -293,8 +293,9 @@ def upgrade_save_ng_plus():
                     if 'PlayerLevelGoals' in old_research and 'GoalLevels' in old_research['PlayerLevelGoals']:
                         old_goals = old_research['PlayerLevelGoals']['GoalLevels']
                         new_goals = {}
-                        for key in ["Reuse_Fluids", "Reuse_Trains", "Reuse_PinPusher", "Reuse_Mixing", "Reuse_IslandLayer3", "Reuse_Crystals", "Reuse_Vortex", "Reuse_Final", "Reuse_PostFinal0", "Reuse_PostFinal1", "Reuse_PostFinal2", "Reuse_PostFinal3", "Random1", "Random2_Crystals"]:
-                            new_goals[key] = old_goals.get(key, 0)
+                        template_goals = template_research.get("PlayerLevelGoals", {}).get("GoalLevels", {})
+                        for key in template_goals.keys():
+                            new_goals[key] = old_goals.get(key, template_goals[key])
                         
                         # Special mappings for version/key compatibility
                         if "Random2" in old_goals:
