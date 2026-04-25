@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shapez 2 Savegame Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- JSONEditor library -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.3/jsoneditor.min.css" rel="stylesheet"
+        type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.3/jsoneditor.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-hover: #f1f5f9;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--surface);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2563eb, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--surface);
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .upload-text {
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background-color: var(--border);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
+        }
+
+        .editor-container {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+            background-color: var(--surface-hover);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .json-editor-wrapper {
+            flex: 1;
+            height: 480px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #jsoneditor {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Light theme tweaks for jsoneditor borders */
+        .jsoneditor {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .jsoneditor-menu {
+            background-color: var(--primary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status.error {
+            display: block;
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .status.success {
+            display: block;
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="header">
+        <h1>Shapez 2 Savegame Tool</h1>
+        <div id="file-info" style="display: none; color: var(--text-muted); font-size: 0.9rem;">
+            Viewing: <span id="filename-display" style="color: var(--text); font-weight: 600;"></span>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Upload Section -->
+        <div class="card" id="upload-section">
+            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <span class="upload-icon">📁</span>
+                <h2 style="margin-top: 0;">Upload .spz2 Save File</h2>
+                <div class="upload-text">Drag and drop your Shapez 2 save file here or click to browse</div>
+                <input type="file" id="file-input" accept=".spz2">
+                <button class="btn">Select File</button>
+            </div>
+            <div id="upload-status" class="status" style="margin-top: 1rem;"></div>
+        </div>
+
+        <!-- Editor Section -->
+        <div class="card editor-container" id="editor-section">
+            <div class="tabs" id="tabs-container">
+                <!-- Tabs generated dynamically -->
+            </div>
+
+            <div id="editor-status" class="status"></div>
+
+            <div class="json-editor-wrapper">
+                <div id="jsoneditor"></div>
+            </div>
+
+            <div class="actions">
+
+                <button type="button" class="btn btn-warning mt-2 w-100" id="upgradeNgpBtn" onclick="upgradeNgp()">
+                    Migrate
+
+                </button>
+
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentSessionId = null;
+        let fileData = {}; // filename => json object mapping
+        let activeTab = null;
+        let editor = null;
+
+        const uploadSection = document.getElementById('upload-section');
+        const editorSection = document.getElementById('editor-section');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const uploadStatus = document.getElementById('upload-status');
+        const editorStatus = document.getElementById('editor-status');
+        const tabsContainer = document.getElementById('tabs-container');
+        const filenameDisplay = document.getElementById('filename-display');
+        const fileInfo = document.getElementById('file-info');
+
+        // Drag and drop event listeners
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+        });
+
+        function showStatus(element, message, isError = false) {
+            element.textContent = message;
+            element.className = `status ${isError ? 'error' : 'success'}`;
+            element.style.display = 'block';
+            setTimeout(() => { if (element.className.includes('success')) element.style.display = 'none'; }, 5000);
+        }
+
+        async function handleFile(file) {
+            if (!file.name.endsWith('.spz2')) {
+                showStatus(uploadStatus, 'Invalid file format. Please upload a .spz2 file.', true);
+                return;
+            }
+
+            uploadStatus.style.display = 'none';
+            filenameDisplay.textContent = file.name;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) throw new Error(data.error || 'Upload failed');
+
+                currentSessionId = data.session_id;
+                fileData = data.files;
+
+                initEditor();
+
+            } catch (err) {
+                showStatus(uploadStatus, err.message, true);
+            }
+        }
+
+        function initEditor() {
+            uploadSection.style.display = 'none';
+            editorSection.style.display = 'flex';
+            fileInfo.style.display = 'block';
+            tabsContainer.innerHTML = '';
+
+            // Initialize JSONEditor
+            if (!editor) {
+                const container = document.getElementById('jsoneditor');
+                const options = {
+                    mode: 'view',
+                    modes: ['view'],
+                    search: true,
+                    onChange: function () {
+                        editorStatus.style.display = 'none';
+                    }
+                };
+                editor = new JSONEditor(container, options);
+            }
+
+            const filenames = Object.keys(fileData);
+            if (filenames.length > 0) {
+                filenames.forEach((filename, i) => {
+                    const tab = document.createElement('button');
+                    tab.className = `tab ${i === 0 ? 'active' : ''}`;
+                    tab.textContent = filename;
+                    tab.onclick = () => switchTab(filename);
+                    tabsContainer.appendChild(tab);
+                });
+
+                activeTab = filenames[0];
+                editor.set(fileData[activeTab]);
+            }
+        }
+
+        function switchTab(filename) {
+            if (activeTab === filename) return;
+
+            // Save current editor state before switching
+            if (activeTab && editor) {
+                try {
+                    fileData[activeTab] = editor.get();
+                } catch (e) {
+                    showStatus(editorStatus, `Invalid JSON in ${activeTab}, please fix before switching tabs.`, true);
+                    return; // Prevent switching if current block is completely invalid
+                }
+            }
+
+            activeTab = filename;
+            Array.from(tabsContainer.children).forEach(t => {
+                if (t.textContent === filename) t.classList.add('active');
+                else t.classList.remove('active');
+            });
+
+            // Load new state
+            editor.set(fileData[filename]);
+        }
+
+        async function upgradeNgp(force = false) {
+            if (!currentSessionId) return;
+
+            const btn = document.getElementById('upgradeNgpBtn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = 'Update and migrating...';
+
+            try {
+                showStatus(editorStatus, 'Update and migrating save for New Ver...', false);
+                const response = await fetch('/api/upgrade_ng_plus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        force: force
+                    })
+                });
+
+                if (response.ok) {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        const data = await response.json();
+                        if (data.needs_confirmation) {
+                            const diff = data.diff;
+                            let msg = "Warning: Save Parameter Mismatch Found\n\n";
+                            msg += "The imported save has different parameters than the template save:\n";
+                            for (const key in diff) {
+                                msg += `• ${key}: Imported Save=${diff[key].old || 'None'}, Template=${diff[key].template || 'None'}\n`;
+                            }
+                            msg += "\nContinuing the upgrade will use the template's Seed and Game Mode. This may result in a different world generation than the original save.\n\nAre you sure you want to proceed?";
+
+                            if (confirm(msg)) {
+                                return await upgradeNgp(true);
+                            } else {
+                                showStatus(editorStatus, "Upgrade cancelled.", true);
+                                return;
+                            }
+                        }
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'upgraded_ngp_' + filenameDisplay.textContent;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    showStatus(editorStatus, "Save Upgrade Complete! Start a new journey with your old wealth!", false);
+                } else {
+                    const err = await response.json();
+                    showStatus(editorStatus, "Upgrade failed: " + (err.error || 'Unknown error'), true);
+                }
+            } catch (e) {
+                console.error(e);
+                showStatus(editorStatus, "An error occurred during NG+ upgrade.", true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+    </script>
+</body>
+
+</html>
