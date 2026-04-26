@@ -147,7 +147,7 @@ def migrate_milestones(old_nodes):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index_flask.html')
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():

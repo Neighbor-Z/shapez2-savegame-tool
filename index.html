@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shapez 2 Savegame Tool Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.3/jsoneditor.min.css" rel="stylesheet"
+        type="text/css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.3/jsoneditor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-hover: #f1f5f9;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: var(--surface);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2563eb, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background-color: var(--border);
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        .btn-warning:disabled {
+            background-color: var(--border);
+            opacity: 0.6;
+        }
+
+        .editor-container {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .json-editor-wrapper {
+            flex: 1;
+            height: 500px;
+        }
+
+        #jsoneditor {
+            width: 100%;
+            height: 100%;
+        }
+
+        .status {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: none;
+            margin-top: 10px;
+        }
+
+        .status.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .status.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="header">
+        <h1>Shapez 2 Savegame Tool (Online)</h1>
+        <div id="file-info" style="display: none; color: var(--text-muted); font-size: 0.9rem;">
+            Viewing: <span id="filename-display" style="color: var(--text); font-weight: 600;"></span>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="card" id="upload-section">
+            <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📁</span>
+                <h2 style="margin-top: 0;">Upload .spz2 Save File</h2>
+                <div style="color: var(--text-muted); margin-bottom: 1rem;">Drag and drop or click to select</div>
+                <input type="file" id="file-input" accept=".spz2">
+                <button class="btn">Select File</button>
+            </div>
+            <div id="upload-status" class="status"></div>
+        </div>
+
+        <div class="card editor-container" id="editor-section">
+            <div class="tabs" id="tabs-container"></div>
+            <div id="editor-status" class="status"></div>
+            <div class="json-editor-wrapper">
+                <div id="jsoneditor"></div>
+            </div>
+
+            <!-- Template Upload (below editor) -->
+            <div id="template-upload-section"
+                style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center;">
+                <h3 style="margin-top: 0; font-size: 1.1rem;">Template File (.spz2) Required for Migrate</h3>
+                <p id="template-status" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">No
+                    template loaded. (Migrate functionality will be disabled)</p>
+                <input type="file" id="template-input" accept=".spz2" onchange="handleTemplate(this.files[0])">
+                <button class="btn" onclick="document.getElementById('template-input').click()"
+                    style="background-color: var(--text-muted); padding: 0.5rem 1rem; font-size: 0.9rem;">
+                    📁 Select Template
+                </button>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-warning" id="btn-ngp" onclick="upgradeNgp()" disabled
+                    title="Please upload a template file first">Migrate</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const MILESTONE_MAPPING = {
+            "RNInitial": "Milestone_Initial", "RNBlueprints": "CBSandbox", "RNRotatorCCW": "CBRotating_ReverseRotator",
+            "RNHalvesSwapper": "CBCutting_Swapper", "RNFullCutter": "CBCutting_FullCutter", "RNTrash": "CBBelts_Trash",
+            "RNIslandBuilding": "Milestone_Initial", "RNRotatorHalf": "CBRotating_Rotator180", "RNBentStacker": "CBStacking_BentStacker",
+            "RNWireBasics": "CBWires_Core", "RNWireLogicGates": "CBWires_LogicGates", "RNFluids": "Milestone_FluidPainting",
+            "RNWireVirtualProcessing": "CBWires_VirtualProcessing", "RNFluidTank": "CBFluids_Storage", "RNTrains": "Milestone_ShapeTrains",
+            "RNPinPusher": "Milestone_PinPusher", "RNColorMixing": "Milestone_ColorMixing", "RNWireTransmission": "CBWires_UniversalTransmission",
+            "RNLabel": "CBDecorations_Labels", "RNCrystals": "Milestone_Crystals", "RNTrainsFluidWagons": "CBTrains_FluidTransport",
+            "RNTrainHubDelivery": "Milestone_VortexDelivery", "RNEndOfGame": "Milestone_FinalConverters",
+            "RNRailRollerCoasterDLCContent": "DLCBTrains_RailRollerCoaster", "RNTrainsFillerWagon": "CBTrains_EmptyTransport",
+            "RNOverflowSplitter": "CBBelts_OverflowSplitter", "RNTrainsWaitStop": "CBTrains_TrainStopHalting",
+            "RNWireOperatorReceiver": "CBWires_GoalReceiver", "RNTrainsPrimaryColors": "CBTrains_LinePackPrimary",
+            "RNTrainsSecondaryColors": "CBTrains_LinePackSecondary", "RNTrainsTertiaryColors": "CBTrains_LineWhite",
+            "RNTrainsTransferStation": "CBTrains_TransferStations",
+        };
+
+        const VALID_NEW_MILESTONES = new Set([
+            'Milestone_Initial', 'Milestone_FluidPainting', 'Milestone_ShapeTrains', 'Milestone_PinPusher', 'Milestone_ColorMixing',
+            'Milestone_SpaceFloor3', 'Milestone_Crystals', 'Milestone_VortexDelivery', 'Milestone_FinalConverters', 'Milestone_PostFinal_Tier0',
+            'Milestone_PostFinal_Tier1', 'Milestone_PostFinal_Tier2', 'Milestone_PostFinal_Tier3', 'CBSandbox', 'CBCutting_FullCutter',
+            'CBCutting_Swapper', 'CBBelts_Trash', 'CBRotating_ReverseRotator', 'CBRotating_Rotator180', 'CBStacking_BentStacker',
+            'CBBelts_OverflowSplitter', 'CBSpecial_FactoryFloor3', 'CBFluids_Storage', 'CBDecorations_Labels', 'CBWires_Core',
+            'CBWires_LogicGates', 'CBWires_VirtualProcessing', 'CBWires_UniversalTransmission', 'CBWires_GoalReceiver',
+            'CBPlatformPack_Linear', 'CBPlatformPack_Irregular', 'CBPlatformPack_Blocky', 'CBPlatformPack_Large', 'CBTrains_FluidTransport',
+            'CBTrains_EmptyTransport', 'CBTrains_TrainStopHalting', 'CBTrains_TransferStations', 'CBTrains_StationSpacer',
+            'CBTrains_LinePackPrimary', 'CBTrains_LinePackSecondary', 'CBTrains_LineWhite', 'DLCBTrains_RailRollerCoaster',
+            'SG_Islands_1_1', 'SG_Islands_1_2', 'SG_Islands_1_3', 'SG_Islands_1_4', 'SG_Islands_2_1', 'SG_Islands_2_2', 'SG_Islands_2_3',
+            'SG_Islands_2_4', 'SG_Islands_2_5', 'SG_Islands_3_1', 'SG_Islands_3_2', 'SG_Islands_3_3', 'SG_Islands_3_4', 'SG_Islands_4_1',
+            'SG_Islands_4_2', 'SG_Islands_4_3', 'SG_Islands_4_4', 'SG_Islands_4_5', 'SG_Fluids_1_1', 'SG_Fluids_1_2', 'SG_Fluids_1_3',
+            'SG_Fluids_1_4', 'SG_Fluids_1_5', 'SG_Fluids_2_1', 'SG_Fluids_2_2', 'SG_Fluids_2_3', 'SG_Fluids_2_4', 'SG_Fluids_2_5',
+            'SG_Fluids_3_1', 'SG_Fluids_3_2', 'SG_Fluids_3_3', 'SG_Fluids_3_4', 'SG_Fluids_3_5', 'SG_Fluids_4_1', 'SG_Fluids_4_2',
+            'SG_Fluids_4_3', 'SG_Fluids_4_4', 'SG_Fluids_4_5', 'SG_Trains_1_1', 'SG_Trains_1_2', 'SG_Trains_1_3', 'SG_Trains_1_4',
+            'SG_Trains_1_5', 'SG_Trains_2_1', 'SG_Trains_2_2', 'SG_Trains_2_3', 'SG_Trains_2_4', 'SG_Trains_2_5', 'SG_Trains_3_1',
+            'SG_Trains_3_2', 'SG_Trains_3_3', 'SG_Trains_3_4', 'SG_Trains_4_1', 'SG_Trains_4_2', 'SG_Trains_4_3', 'SG_Trains_4_4',
+            'SG_Trains_4_5', 'SG_Trains_6_1', 'SG_Trains_6_2', 'SG_Trains_6_3', 'SG_Trains_6_4', 'SG_Trains_6_5', 'SG_PinPusher_2_1',
+            'SG_PinPusher_2_2', 'SG_PinPusher_2_3', 'SG_PinPusher_2_4', 'SG_PinPusher_3_1', 'SG_PinPusher_3_2', 'SG_PinPusher_3_3',
+            'SG_PinPusher_3_4', 'SG_PinPusher_3_5', 'SG_PinPusher_4_1', 'SG_PinPusher_4_2', 'SG_PinPusher_4_3', 'SG_PinPusher_4_4',
+            'SG_PinPusher_5_1', 'SG_PinPusher_5_2', 'SG_PinPusher_5_3', 'SG_PinPusher_5_4', 'SG_PinPusher_5_5', 'SG_Mixing_1_1',
+            'SG_Mixing_1_2', 'SG_Mixing_1_3', 'SG_Mixing_1_4', 'SG_Mixing_1_5', 'SG_Mixing_2_1', 'SG_Mixing_2_2', 'SG_Mixing_2_3',
+            'SG_Mixing_2_4', 'SG_Mixing_3_1', 'SG_Mixing_3_2', 'SG_Mixing_3_3', 'SG_Mixing_4_1', 'SG_Mixing_4_2', 'SG_Mixing_4_3',
+            'SG_Mixing_4_4', 'SG_Mixing_5_1', 'SG_Mixing_5_2', 'SG_Mixing_5_3', 'SG_Mixing_5_4', 'SG_Mixing_5_5', 'SG_Mixing_6_1',
+            'SG_Mixing_6_2', 'SG_Mixing_6_3', 'SG_Mixing_6_4', 'SG_Mixing_6_5', 'SG_Mixing_7_1', 'SG_Mixing_7_2', 'SG_Mixing_7_3',
+            'SG_Mixing_7_4', 'SG_Mixing_7_5', 'SG_IslandLayer3_1_1', 'SG_IslandLayer3_1_2', 'SG_IslandLayer3_1_3', 'SG_IslandLayer3_1_4',
+            'SG_IslandLayer3_1_5', 'SG_IslandLayer3_2_1', 'SG_IslandLayer3_2_2', 'SG_IslandLayer3_2_3', 'SG_IslandLayer3_2_4',
+            'SG_IslandLayer3_2_5', 'SG_Crystals_1_1', 'SG_Crystals_1_2', 'SG_Crystals_1_3', 'SG_Crystals_1_4', 'SG_Crystals_1_5',
+            'SG_Crystals_2_1', 'SG_Crystals_2_2', 'SG_Crystals_2_3', 'SG_Crystals_2_4', 'SG_Crystals_2_5', 'SG_Crystals_3_1',
+            'SG_Crystals_3_2', 'SG_Crystals_3_3', 'SG_Crystals_3_4', 'SG_Crystals_3_5', 'SG_TrainHubDelivery_1_1', 'SG_TrainHubDelivery_1_2',
+            'SG_TrainHubDelivery_1_3', 'SG_TrainHubDelivery_1_4', 'SG_TrainHubDelivery_1_5', 'SG_TrainHubDelivery_2_1',
+            'SG_TrainHubDelivery_2_2', 'SG_TrainHubDelivery_2_3', 'SG_TrainHubDelivery_2_4', 'SG_TrainHubDelivery_2_5',
+            'SG_PostFinalT0_1_1', 'SG_PostFinalT0_1_2', 'SG_PostFinalT0_1_3', 'SG_PostFinalT0_1_4', 'SG_PostFinalT0_2_1',
+            'SG_PostFinalT0_2_2', 'SG_PostFinalT0_2_3', 'SG_PostFinalT0_2_4', 'SG_PostFinalT0_2_5', 'SG_PostFinalT1_1_1',
+            'SG_PostFinalT1_1_2', 'SG_PostFinalT1_1_3', 'SG_PostFinalT1_1_4', 'SG_PostFinalT1_1_5', 'SG_PostFinalT1_2_1',
+            'SG_PostFinalT1_2_2', 'SG_PostFinalT1_2_3', 'SG_PostFinalT1_2_4', 'SG_PostFinalT2_1_1', 'SG_PostFinalT2_1_2',
+            'SG_PostFinalT2_1_3', 'SG_PostFinalT2_1_4', 'SG_PostFinalT2_2_1', 'SG_PostFinalT2_2_2', 'SG_PostFinalT2_2_3',
+            'SG_PostFinalT2_2_4', 'SG_PostFinalT3_1_1', 'SG_PostFinalT3_1_2', 'SG_PostFinalT3_1_3', 'SG_PostFinalT3_1_4'
+        ]);
+
+        let currentZip = null;
+        let templateZip = null;
+        let fileData = {};
+        let activeTab = null;
+        let editor = null;
+        let originalFilename = "";
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+
+        async function handleTemplate(file) {
+            if (!file || !file.name.endsWith('.spz2')) return;
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                templateZip = await JSZip.loadAsync(arrayBuffer);
+
+                const statusEl = document.getElementById('template-status');
+                statusEl.textContent = `✅ Template Loaded: ${file.name}`;
+                statusEl.style.color = "var(--success)";
+
+                document.getElementById('btn-ngp').disabled = false;
+                document.getElementById('btn-ngp').title = "Template ready!";
+            } catch (e) {
+                alert("Error loading template: " + e.message);
+            }
+        }
+
+        // Utils
+        function migrateMilestones(oldNodes) {
+            const newNodes = new Set();
+            (oldNodes || []).forEach(node => {
+                const mapped = MILESTONE_MAPPING[node] || node;
+                if (VALID_NEW_MILESTONES.has(mapped)) newNodes.add(mapped);
+            });
+            return Array.from(newNodes).sort();
+        }
+
+        function showStatus(elementId, message, isError = false) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `status ${isError ? 'error' : 'success'}`;
+            el.style.display = 'block';
+        }
+
+        // Drag & Drop
+        dropZone.ondragover = e => { e.preventDefault(); dropZone.classList.add('dragover'); };
+        dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+        dropZone.ondrop = e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); };
+        fileInput.onchange = e => handleFile(e.target.files[0]);
+
+        async function handleFile(file) {
+            if (!file || !file.name.endsWith('.spz2')) return;
+            originalFilename = file.name;
+            document.getElementById('filename-display').textContent = file.name;
+            document.getElementById('file-info').style.display = 'block';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                currentZip = await JSZip.loadAsync(arrayBuffer);
+                fileData = {};
+
+                const targets = ['savegame.json', 'local-player.json', 'research.json'];
+                for (const name of targets) {
+                    const f = currentZip.file(name);
+                    if (f) fileData[name] = JSON.parse(await f.async('string'));
+                }
+
+                initEditor();
+            } catch (e) {
+                showStatus('upload-status', "Error reading spz2: " + e.message, true);
+            }
+        }
+
+        function initEditor() {
+            document.getElementById('upload-section').style.display = 'none';
+            document.getElementById('editor-section').style.display = 'flex';
+            const container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+
+            if (!editor) {
+                editor = new JSONEditor(document.getElementById('jsoneditor'), {
+                    mode: 'view', modes: ['view']
+                });
+            }
+
+            Object.keys(fileData).forEach((name, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'tab' + (i === 0 ? ' active' : '');
+                btn.textContent = name;
+                btn.onclick = () => switchTab(name);
+                container.appendChild(btn);
+                if (i === 0) { activeTab = name; editor.set(fileData[name]); }
+            });
+        }
+
+        function switchTab(name) {
+            fileData[activeTab] = editor.get();
+            activeTab = name;
+            Array.from(document.getElementById('tabs-container').children).forEach(b => {
+                b.classList.toggle('active', b.textContent === name);
+            });
+            editor.set(fileData[name]);
+        }
+
+        async function triggerDownload(zip, prefix = "edited_") {
+            const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.href = url;
+            a.download = prefix + (originalFilename || "save.spz2");
+            a.click();
+            setTimeout(() => {
+                URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
+        }
+
+        async function upgradeNgp(force = false) {
+            if (!templateZip) {
+                alert("Please upload a template save file first.");
+                return;
+            }
+            try {
+                showStatus('editor-status', "Merging with uploaded template...");
+                const tZip = templateZip;
+
+                const tSave = JSON.parse(await tZip.file('savegame.json').async('string'));
+                const tResearch = JSON.parse(await tZip.file('research.json').async('string'));
+                const tPlayer = JSON.parse(await tZip.file('local-player.json').async('string'));
+
+                // Merge logic (simplified port from Python)
+                const oldSave = fileData['savegame.json'] || {};
+                const oldResearch = fileData['research.json'] || {};
+                const oldPlayer = fileData['local-player.json'] || {};
+
+                // --- Check for parameter mismatches ---
+                const oldParams = oldSave.Parameters || {};
+                const tParams = tSave.Parameters || {};
+                let diffMsg = "";
+
+                if (!force) {
+                    if (oldParams.Seed !== tParams.Seed) {
+                        diffMsg += `• Seed: Old=${oldParams.Seed || 'None'}, Template=${tParams.Seed}\n`;
+                    }
+                    if (oldParams.GameModeId !== tParams.GameModeId) {
+                        diffMsg += `• GameModeId: Old=${oldParams.GameModeId || 'None'}, Template=${tParams.GameModeId}\n`;
+                    }
+
+                    if (diffMsg) {
+                        const confirmMsg = "Warning: Save Parameter Mismatch Found\n\n" +
+                            "The following parameters differ from the template:\n" + diffMsg +
+                            "\nContinuing will use the Template's settings. Proceed anyway?";
+                        if (confirm(confirmMsg)) return upgradeNgp(true);
+                        return;
+                    }
+                }
+
+                tSave.InternalUuid = oldSave.InternalUuid;
+                tSave.LastSaved = oldSave.LastSaved;
+                tSave.SavegameName = (oldSave.SavegameName || "Save") + "_NG+";
+                tSave.TotalPlaytime = oldSave.TotalPlaytime || 0;
+
+                tResearch.PlayerLevel = oldResearch.PlayerLevel || tResearch.PlayerLevel;
+                tResearch.PointCurrency = oldResearch.PointCurrency || tResearch.PointCurrency;
+                if (oldResearch.ResearchProgress?.UnlockedUpgradeIds) {
+                    tResearch.ResearchProgress.UnlockedUpgradeIds = migrateMilestones(oldResearch.ResearchProgress.UnlockedUpgradeIds);
+                }
+                if (oldResearch.Shapes?.StoredShapes) tResearch.Shapes.StoredShapes = oldResearch.Shapes.StoredShapes;
+
+                // Sync GoalLevels
+                if (oldResearch.PlayerLevelGoals?.GoalLevels) {
+                    const oldGoals = oldResearch.PlayerLevelGoals.GoalLevels;
+                    const newGoals = tResearch.PlayerLevelGoals.GoalLevels;
+                    Object.keys(newGoals).forEach(k => { if (oldGoals[k]) newGoals[k] = oldGoals[k]; });
+                    if (oldGoals.Random2) newGoals.Random2_Crystals = oldGoals.Random2;
+                    if (oldGoals.Reuse_TrainHubDelivery) newGoals.Reuse_Vortex = oldGoals.Reuse_TrainHubDelivery;
+                }
+
+                // Update current buffer
+                fileData = { 'savegame.json': tSave, 'research.json': tResearch, 'local-player.json': oldPlayer };
+                currentZip = tZip; // Base everything on template structure now
+                initEditor();
+                showStatus('editor-status', "Migrate complete! Preparing download...");
+
+                // Immediately repack and download
+                await repackSave("migrated_");
+            } catch (e) {
+                alert("Migrate failed: " + e.message);
+                showStatus('editor-status', "failed: " + e.message, true);
+            }
+        }
+
+        async function repackSave(prefix = "edited_") {
+            try {
+                if (activeTab && editor) {
+                    fileData[activeTab] = editor.get();
+                }
+                const zip = currentZip || new JSZip();
+
+                // Apply JSON changes
+                for (const [name, content] of Object.entries(fileData)) {
+                    zip.file(name, JSON.stringify(content));
+                }
+
+                await triggerDownload(zip, prefix);
+                showStatus('editor-status', "Save packed and downloaded!");
+            } catch (err) {
+                console.error(err);
+                alert("Repack failed: " + err.message);
+                showStatus('editor-status', "Download failed: " + err.message, true);
+            }
+        }
+    </script>
+</body>
+</html>
