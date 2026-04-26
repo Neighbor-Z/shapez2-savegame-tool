@@ -197,6 +197,29 @@
             margin-top: 1rem;
             flex-wrap: wrap;
         }
+
+        .info-box {
+            background-color: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--primary);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .info-box a {
+            color: var(--primary-hover);
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .info-box a:hover {
+            opacity: 0.8;
+        }
     </style>
 </head>
 
@@ -210,6 +233,15 @@
     </header>
 
     <main class="container">
+        <div class="info-box">
+            <span style="font-size: 1.5rem;">ℹ️</span>
+            <div>
+                Before using this tool, please refer to
+                <a href="https://github.com/Neighbor-Z/shapez2-savegame-tool/" target="_blank">Introduction and
+                    Instructions</a> (GitHub).
+            </div>
+        </div>
+
         <div class="card" id="upload-section">
             <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
                 <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📁</span>
@@ -522,4 +554,5 @@
         }
     </script>
 </body>
+
 </html>

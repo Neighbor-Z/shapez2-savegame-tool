@@ -22,6 +22,10 @@ Shapez 2 is a highly acclaimed factory automation game. Its saves (`.spz2`) are 
 - Open the [webpage](https://neighbor-z.github.io/shapez2-savegame-tool/) of this project.
 - A game save exported from Shapez 2 (theoretically supports all game save versions between 0.0.7~1.0.2).
 
+> [!NOTE]
+>
+> Refreshing the page will **lose** all the uploaded session because the webpage of this project does not store any information.
+
 ### Save Upgrade and Migration
 
 The game version 1.0 is declared officially to be completely incompatible with game saves generated in previous versions. Although players can switch to the legacy branch to continue accessing old game saves, in a vote of about 2500 people, approximately 15% of players still expressed that they could not easily accept this situation, which is a pity for players who hope to directly inherit older game saves.
@@ -39,7 +43,7 @@ Theoretically this tool supports upgrading and migrating all versions of game sa
 #### Steps
 
 1. Launch the old version of the game and load the legacy save, select the buildings in the old save, and save them as a blueprint. (If you have many buildings, this step will make the computer very laggy, so please be patient and do not repeat operations.) Then export the old save you want to upgrade and migrate from the old version.
-2. Upload the old save, select `savegame.json`, find and open the node `Parameters`, record the `GameModeId` (game mode) and `Seed` (map seed).
+2. Open [webpage](https://neighbor-z.github.io/shapez2-savegame-tool/) and upload the old save, select `savegame.json`, find and open the node `Parameters`, record the `GameModeId` (game mode) and `Seed` (map seed).
 3. Continue to open `ScenarioParameters > MapGenerationParameters`, take a note and write down all map generation parameters therein.
 4. Upgrade to the new version of the game and launch it, create a new save, choose the **same** game mode as the old save, fill in the map seed recorded earlier, and set the map generation parameters on the left to the previously recorded parameters, and **turn off SpiralGeneration**.
 5. Save and export the newly created save, rename it to `template-v1.spz2`.
